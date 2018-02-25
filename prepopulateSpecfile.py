@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Generate a skeletal zone definition file from the given shapefile.
 """

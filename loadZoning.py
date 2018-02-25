@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # Load zoning for all spec'd cities
 
 # Copyright 2018 Zoning.Space contributors
@@ -29,7 +29,7 @@ print('''
   / // _ \| '_ \| | '_ \ / _` | \___ \| '_ \ / _` |/ __/ _ \
  / /| (_) | | | | | | | | (_| |_ ___) | |_) | (_| | (_|  __/
 /____\___/|_| |_|_|_| |_|\__, (_)____/| .__/ \__,_|\___\___|
-                         |___/        |_|                   
+                         |___/        |_|
 ''') # thanks figlet
 
 parser = ArgumentParser(description='Ingest zoning data for fun and profit')
