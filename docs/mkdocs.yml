@@ -1,0 +1,6 @@
+site_name: zoning.space
+site_url: docs.zoning.space
+repo_url: https://github.com/zoningspace/zoning.space
+site_dir: ../target/mkdocs
+docs_dir: ../docs
+theme: readthedocs
