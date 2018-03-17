@@ -20,9 +20,14 @@ import os.path
 datadir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'data', 'zoning')
 
 def runHook (slug, hook, data):
+    action = {
+        'before': 'preprocessing',
+        'after': 'postprocessing'
+    }[hook]
+
     hookFile = os.path.join(os.path.dirname(__file__), slug + '.py')
     if not os.path.exists(hookFile):
-        print(f'No hook file found for slug {slug}')
+        print(f'No hook file found for slug {slug} - not {action} data')
         return data
     else:
         hooks = {}
@@ -30,7 +35,7 @@ def runHook (slug, hook, data):
             gl = {k: v for k, v in globals().items()}
             exec(hookRaw.read(), gl, hooks)
         if not hook in hooks:
-            print(f'No {hook} hook found for slug {slug}')
+            print(f'No {hook} hook found for slug {slug} - not {action} data')
             return data
         else:
             print(f'Executing {hook} hook for slug {slug}')
