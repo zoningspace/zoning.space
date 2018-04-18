@@ -47,18 +47,23 @@ def after (data, datadir):
 
     # For M and RMX-SPD-R St zones, we cut these zones out of the whole file, overlay them with the affected area, and
     # then merge them back in.
-    print('adding multifamily as conditional use to industrial zones in central city and near light rail')
+    print('adding multifamily as conditional use to industrial zones near light rail')
     industrialZoneLocs = data.zone.apply(lambda zone: zone.startswith('M-1') or zone.startswith('M-1(S)' or zone.startswith('M-2')))
     industrialZones = data[industrialZoneLocs]
     affectedAreas = lightRailStops.loc[:,['geometry']].copy()
+    affectedAreas['lightRail'] = True # add a flag column so we know which resulting geometries overlapped
     # and add the central city
-    affectedAreas = affectedAreas.append(centralCity)
-    affectedAreas['affected'] = 42 # add a flag column so we know which resulting geometries overlapped
     # Do an overlay so that we split large industrial zones at the boundaries of the affected area
-    splitIndustrialAreas = gp.overlay(industrialZones, affectedAreas, how='union')
+    splitIndustrialAreas = gp.overlay(industrialZones, affectedAreas, how='identity')
+    centralCity['centralCity'] = True
+    splitIndustrialAreas = gp.overlay(splitIndustrialAreas, centralCity, how='identity')
 
-    # and set the multiFamily flag
-    splitIndustrialAreas['multiFamily'] = splitIndustrialAreas['affected'].apply(lambda x: 'conditional' if x == 42 else 'no')
+    splitIndustrialAreas['lightRail'] = splitIndustrialAreas.lightRail.fillna(False)
+    splitIndustrialAreas['centralCity'] = splitIndustrialAreas.centralCity.fillna(False)
+
+    # and set the multiFamily flag. Conditional at light rail
+    splitIndustrialAreas['multiFamily'] = splitIndustrialAreas\
+        .apply(lambda x: 'yes' if x.centralCity else 'conditional' if x.lightRail else 'no', 'columns')
 
     print('setting density limits in RMX-SPD-R Street Corridor')
     rmxSpdRstLocs = data.zone == 'RMX-SPD-R Street Corridor'
@@ -66,7 +71,7 @@ def after (data, datadir):
 
     affectedAreas = lightRailStops.loc[:,['geometry']].copy()
     affectedAreas['affected'] = 42 # add a flag column so we know which resulting geometries overlapped
-    splitRmxSpd = gp.overlay(rmxSpdRst, affectedAreas, how='union')
+    splitRmxSpd = gp.overlay(rmxSpdRst, affectedAreas, how='identity')
     splitRmxSpd['loMaxUnitsPerHectare'] = splitRmxSpd['hiMaxUnitsPerHectare'] =\
         splitRmxSpd.affected.apply(lambda x: 100 / ACRE_TO_HECTARE if x == 42 else 60 / ACRE_TO_HECTARE)
 
