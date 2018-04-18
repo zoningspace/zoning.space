@@ -5,15 +5,52 @@ import partridge as ptg
 from shapely.geometry import Point
 import geopandas as gp
 import pandas as pd
+import numpy as np
 
 from src.zoning.zoneingest import FOOT_TO_METER, ACRE_TO_HECTARE
 from src.ingest.shputils import readZippedShapefile, fastOverlay
 
 def after (data, datadir):
-    global join, readZippedShapefile, fastOverlay, ptg, Point, gp, pd, FOOT_TO_METER, ACRE_TO_HECTARE
+    global join, readZippedShapefile, fastOverlay, ptg, Point, gp, pd, FOOT_TO_METER, ACRE_TO_HECTARE, np
 
     print('reprojecting data')
     data = data.to_crs(epsg=26942)
+
+    print('adding parking requirements \U0001f697')
+    # Parking Districts required a CA Public Records Act request:
+    # https://sacramentoca.mycusthelp.com/WEBAPP/_rs/(S(2rztm4xsj04qo445twgqihlj))/RequestArchiveDetails.aspx?rid=8033&view=1
+    parkingDistricts = readZippedShapefile(join(datadir, 'sacramento_parking.zip')).to_crs(epsg=26942)\
+        .rename(columns={'SECTION': 'parkingDist'})
+
+    data = fastOverlay(data, parkingDistricts)
+    data['parkingDist'] = data.parkingDist.astype('category')
+
+    # http://www.qcode.us/codes/sacramento/view.php?topic=17-vi-17_608-17_608_030&frames=on
+
+    # Most places have no max parking requirement, overwritten in the CBD below
+    data['loMaxParkingPerUnit'] = np.inf
+    data['hiMaxParkingPerUnit'] = np.inf
+
+    data.loc[data.parkingDist == 'Central Business District', 'loMinParkingPerUnit'] = 0
+    data.loc[data.parkingDist == 'Central Business District', 'hiMinParkingPerUnit'] = 0
+    data.loc[(data.parkingDist == 'Central Business District') & (data.multiFamily == 'yes'), 'loMaxParkingPerUnit'] = 1
+    data.loc[(data.parkingDist == 'Central Business District') & (data.multiFamily == 'yes'), 'hiMaxParkingPerUnit'] = 1
+
+    data.loc[(data.parkingDist == 'Urban') & (data.multiFamily == 'yes'), 'loMinParkingPerUnit'] = 0.5
+    data.loc[(data.parkingDist == 'Urban') & (data.multiFamily == 'yes'), 'hiMinParkingPerUnit'] = 0.5
+
+    # != yes: no or conditional
+    # NB not encoding exception for lots under 3200 sq feet
+    data.loc[(data.parkingDist == 'Urban') & (data.multiFamily != 'yes'), 'loMinParkingPerUnit'] = 1
+    data.loc[(data.parkingDist == 'Urban') & (data.multiFamily != 'yes'), 'hiMinParkingPerUnit'] = 1
+
+    data.loc[data.parkingDist == 'Traditional', 'loMinParkingPerUnit'] = 1
+    data.loc[data.parkingDist == 'Traditional', 'hiMinParkingPerUnit'] = 1
+
+    data.loc[(data.parkingDist == 'Suburban') & (data.multiFamily == 'yes'), 'loMinParkingPerUnit'] = 1.5
+    data.loc[(data.parkingDist == 'Suburban') & (data.multiFamily == 'yes'), 'hiMinParkingPerUnit'] = 1.5
+    data.loc[(data.parkingDist == 'Suburban') & (data.multiFamily != 'yes'), 'loMinParkingPerUnit'] = 1
+    data.loc[(data.parkingDist == 'Suburban') & (data.multiFamily != 'yes'), 'hiMinParkingPerUnit'] = 1
 
     # M-1, M-1(S) and M-2 zones conditionally permit multifamily housing iff it is in the central city or within 1/4 mile
     # of a light rail stop
@@ -61,7 +98,8 @@ def after (data, datadir):
     splitIndustrialAreas['lightRail'] = splitIndustrialAreas.lightRail.fillna(False)
     splitIndustrialAreas['centralCity'] = splitIndustrialAreas.centralCity.fillna(False)
 
-    # and set the multiFamily flag. Conditional at light rail
+    # and set the multiFamily flag. Conditional at light rail, yes in central city
+    # http://qcode.us/codes/sacramento/view.php?topic=17-ii-17_220-i-17_220_110&frames=on
     splitIndustrialAreas['multiFamily'] = splitIndustrialAreas\
         .apply(lambda x: 'yes' if x.centralCity else 'conditional' if x.lightRail else 'no', 'columns')
 
