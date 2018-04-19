@@ -79,6 +79,8 @@ for key, val in variables.items():
         # cannot be represented as a range
         schema['properties'][key] = val
 
+schema['properties']['jurisdiction'] = 'str'
+
 def isBlank (line):
     return len(line) == 0 or all([c == '' for c in line])
 
@@ -316,4 +318,5 @@ class ZoneIngester(Ingester):
         zoneData = zoneData.apply(self.computeDensityLimits, axis=1)
 
         df = data.merge(zoneData, left_on=self.zoneColumns, right_index=True, validate='m:1', how='left')
+        df['jurisdiction'] = self.jurisdiction
         return df
