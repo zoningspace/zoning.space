@@ -14,7 +14,6 @@ from functools import partial
 
 # Unify several datasets to produce a canonical SF Zoning dataset
 def before (data, datadir):
-    global readZippedShapefile, join, gp, exists, fastOverlay # https://stackoverflow.com/questions/12505047/in-python-why-doesnt-an-import-in-an-exec-in-a-function-work
     # from https://data.sfgov.org/Housing-and-Buildings/Height-and-Bulk-Districts/tt4g-gzy9/data
 
     # project to state plane CA Zone 3 (meters)
@@ -61,7 +60,6 @@ def before (data, datadir):
     return data
 
 def after (data, datadir):
-    global np, FOOT_TO_METER, partial, tqdm
     # Take care of special height limits
     print('Handling special height limits')
     rh1 = data[data.zone.apply(lambda x: x.startswith('RH-1'))].index

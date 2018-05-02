@@ -10,7 +10,6 @@ tqdm.pandas()
 
 # copy over the specified Planned Development density
 def after (data, datadir):
-    global ACRE_TO_HECTARE, readZippedShapefile, fastOverlay, np, FOOT_TO_METER, join, pd, gp
     data = data.to_crs(epsg=26943)
 
     pds = data[data.ZONINGABBR.apply(lambda a: '(PD)' in a)].index
