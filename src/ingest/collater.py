@@ -57,8 +57,11 @@ class Collater (object):
 
         projected = data.to_crs(CRS)
 
-        fionaRecords = projected.apply(self.toFionaRecord, axis=1)
-        self.out.writerecords(fionaRecords)
+        def fiona_records_gen():
+            for index, row in projected.iterrows():
+                yield self.toFionaRecord(row)
+
+        self.out.writerecords(fiona_records_gen())
 
     # convert NaNs to Nones, which will be written as nulls. The JSON spec doesn't allow NaNs and Infinities, but fiona
     # is happy to write them anyhow
