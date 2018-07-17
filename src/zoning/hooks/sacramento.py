@@ -11,8 +11,6 @@ from src.zoning.zoneingest import FOOT_TO_METER, ACRE_TO_HECTARE
 from src.ingest.shputils import readZippedShapefile, fastOverlay
 
 def after (data, datadir):
-    global join, readZippedShapefile, fastOverlay, ptg, Point, gp, pd, FOOT_TO_METER, ACRE_TO_HECTARE, np
-
     print('reprojecting data')
     data = data.to_crs(epsg=26942)
 

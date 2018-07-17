@@ -30,13 +30,12 @@ def runHook (slug, hook, data):
         print(f'No hook file found for slug {slug} - not {action} data')
         return data
     else:
-        hooks = {}
+        local_env = {}
         with open(hookFile) as hookRaw:
-            gl = {k: v for k, v in globals().items()}
-            exec(hookRaw.read(), gl, hooks)
-        if not hook in hooks:
+            exec(hookRaw.read(), local_env, local_env)
+        if not hook in local_env:
             print(f'No {hook} hook found for slug {slug} - not {action} data')
             return data
         else:
             print(f'Executing {hook} hook for slug {slug}')
-            return hooks[hook](data, datadir)
+            return local_env[hook](data, datadir)
